@@ -1,4 +1,4 @@
 dropcast
 ========
 
-Python script for creating rss feed from Dropbox public directory
+Python script for creating podcast rss feed from Dropbox public directory
