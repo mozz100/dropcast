@@ -1,35 +1,47 @@
-import fnmatch, os, urllib
+import fnmatch, os, sys, urllib
 from os.path import join, getsize
+from urllib2 import quote
+from datetime import datetime
 
-DROPBOX_ID = '' # you dropbox ID, like 1111111
-BASE_URL = 'http://dl.dropbox.com/u/%s/' % (DROPBOX_ID)
+DROPBOX_ID = '2475885'
+BASE_URL = 'https://dl.dropbox.com/u/%s/' % (DROPBOX_ID)
+PODCAST_TITLE = 'My Podcast'
+DESCRIPTION = 'This podcast created in dropcast'
 
-template_head = '\
-<?xml version="1.0" encoding="ISO-8859-1"?>\
-<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">\
-<channel>\
-<description>Dropcast</description>\
-<link>%s</link>\
-  <title>My dropcast</title>\
-<pubDate> Wed, 21 Apr 2010 10:35:02 +0200 </pubDate>\
-' % BASE_URL
+feed_template = """<?xml version="1.0" encoding="ISO-8859-1"?>
+  <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+    <channel>
+      <description>%s</description>
+      <link>%s/feed.xml</link>
+      <title>%s</title>
+      <pubDate>%s</pubDate>
+        <!--data-feed -->
+    </channel>
+  </rss>
+  """ % (DESCRIPTION, BASE_URL, PODCAST_TITLE, datetime.now())
 
 def main():
 
-  items = ''
+  feed = ''
   for dirname, dirnames, files in os.walk('.'):
     dirname_enc = urllib.quote(dirname[2:].replace(u'\\', u'/'))
-    for mp3_url, title, size in [(urllib.quote(filename), filename, getsize(join(dirname, filename)) ) for filename in files if fnmatch.fnmatch(filename, '*.mp3')]:
-      link = '%s%s/%s' % (BASE_URL, dirname_enc, mp3_url)
-      items += '<item>\n\
-      <title>%s</title>\n\
-      <link>%s</link>\n\
-      <enclosure type="audio/mpeg" length="%s" url="%s"/>\
-      </item>\n' % (title, link, size, link)  
+    for filename in files:
+      if not fnmatch.fnmatch(filename, '*.mp3'):
+        continue
+      mp3_url = quote(filename)
+      title = filename.replace('&','&amp;')
+      size = getsize(join(dirname, filename))
 
-  content = '%s\n%s\n</channel></rss>' % (template_head, items)
+      link = '%s%s/%s' % (BASE_URL, dirname_enc, mp3_url)
+      feed += """<item>
+                  <title>%s</title>
+                  <link>%s</link>
+                  <enclosure type="audio/mpeg" length="%s" url="%s"/>
+                  </item>""" % (title, link, size, link)  
+
+  feed_data = feed_template.replace('<!--data-feed -->',feed)
   f = open("feed.xml", 'w')
-  f.write(content)
+  f.write(feed_data)
   f.close()
 
 if __name__ == '__main__':
