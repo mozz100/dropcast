@@ -3,7 +3,7 @@ from os.path import join, getsize
 from urllib2 import quote
 from datetime import datetime
 
-DROPBOX_ID = '2475885'
+DROPBOX_ID = '1234567'
 BASE_URL = 'https://dl.dropbox.com/u/%s/' % (DROPBOX_ID)
 PODCAST_TITLE = 'My Podcast'
 DESCRIPTION = 'This podcast created in dropcast'
