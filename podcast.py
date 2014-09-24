@@ -1,12 +1,13 @@
+#!/usr/bin/env python
+# Usage: ./podcast.py <base_url> <title> <description>
+# e.g. ./podcast.py 'https://dl.dropbox.com/u/1234567/' 'My podcast' 'Created with dropcast'
+
 import fnmatch, os, sys, urllib
 from os.path import join, getsize
 from urllib2 import quote
 from datetime import datetime
 
-DROPBOX_ID = '1234567'
-BASE_URL = 'https://dl.dropbox.com/u/%s/' % (DROPBOX_ID)
-PODCAST_TITLE = 'My Podcast'
-DESCRIPTION = 'This podcast created in dropcast'
+BASE_URL, PODCAST_TITLE, DESCRIPTION = sys.argv[1:4]
 
 feed_template = """<?xml version="1.0" encoding="ISO-8859-1"?>
   <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
