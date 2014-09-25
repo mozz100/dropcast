@@ -25,3 +25,10 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+#Media
+*.mp3
+*.m4a
+
+#Output
+feed.xml
