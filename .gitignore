@@ -32,3 +32,6 @@ pip-log.txt
 
 #Output
 feed.xml
+
+#Virtual env
+venv

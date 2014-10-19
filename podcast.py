@@ -2,10 +2,11 @@
 # Usage: ./podcast.py <base_url> <title> <description>
 # e.g. ./podcast.py 'https://dl.dropbox.com/u/1234567' 'My podcast' 'Created with dropcast'
 
-import fnmatch, os, sys, urllib
+import fnmatch, os, sys, urllib, time, hashlib, mutagen
 from os.path import getsize
 from urllib2 import quote
 from datetime import datetime
+from email.utils import formatdate  # for RFC 2822 formatting
 
 BASE_URL, PODCAST_TITLE, DESCRIPTION = sys.argv[1:4]
 MATCHES = {
@@ -27,7 +28,7 @@ feed_template = """<?xml version="1.0" encoding="ISO-8859-1"?>
         <!--data-feed -->
     </channel>
   </rss>
-  """ % (DESCRIPTION, BASE_URL, PODCAST_TITLE, datetime.now())
+  """ % (DESCRIPTION, BASE_URL, PODCAST_TITLE, formatdate())
 
 def main():
 
@@ -55,14 +56,40 @@ def main():
       enctype = MATCHES[match]
 
       # TODO more metadata.  See https://www.apple.com/uk/itunes/podcasts/specs.html#rss
-      # In particular, GUID should probably relate to the file, and can we get
-      # pubDate?
+      # Can we get Album, Title, Comment?
 
-      feed += """<item>
+      pubDate = formatdate(os.path.getctime(filename))  # Base pubDate on create date of file.  Imperfect.
+      guid = hashlib.md5()
+      guid.update(title)
+      guid.update(pubDate)
+
+      from mutagen.mp4 import MP4
+      if filename.endswith(".m4a"):
+        audio = MP4(filename)
+        album = audio['\xa9alb'][0].replace('&','&amp;')   # program name *used
+        lyrics = audio['\xa9lyr'][0].replace('&','&amp;')  # detailed notes * used
+        artist = audio['\xa9ART'][0].replace('&','&amp;')  # radio station * used
+        pubDate  = datetime.strptime(audio['\xa9day'][0][0:19], '%Y-%m-%dT%H:%M:%S')  # broadcast date, eg 2014-09-18T23:00:00+01:00 TODO parse timezone
+        comment = audio['\xa9cmt'][0].replace('&','&amp;') # comment
+        track_title = audio['\xa9nam'][0].replace('&','&amp;') # episode name  * used
+        title = album + ' - ' + track_title
+        feed += """<item>
                   <title>%s</title>
                   <link>%s</link>
+                  <guid>%s</guid>
+                  <pubDate>%s</pubDate>
+                  <itunes:author>%s</itunes:author>
+                  <itunes:summary>%s</itunes:summary>
                   <enclosure type="%s" length="%s" url="%s"/>
-                  </item>""" % (title, link, enctype, size, link)  
+                  </item>""" % (title, link, guid.hexdigest(), pubDate, artist, lyrics, enctype, size, link)  
+      else:
+        feed += """<item>
+                  <title>%s</title>
+                  <link>%s</link>
+                  <guid>%s</guid>
+                  <pubDate>%s</pubDate>
+                  <enclosure type="%s" length="%s" url="%s"/>
+                  </item>""" % (title, link, guid.hexdigest(), pubDate, enctype, size, link)  
 
   feed_data = feed_template.replace('<!--data-feed -->',feed)
   f = open("feed.xml", 'w')
