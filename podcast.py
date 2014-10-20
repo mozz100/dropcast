@@ -3,10 +3,12 @@
 # e.g. ./podcast.py 'https://dl.dropbox.com/u/1234567' 'My podcast' 'Created with dropcast'
 
 import fnmatch, os, sys, urllib, time, hashlib, mutagen
+from dateutil.parser import parse as dateparse
 from os.path import getsize
 from urllib2 import quote
 from datetime import datetime
 from email.utils import formatdate  # for RFC 2822 formatting
+from mutagen.mp4 import MP4
 
 BASE_URL, PODCAST_TITLE, DESCRIPTION = sys.argv[1:4]
 MATCHES = {
@@ -17,6 +19,10 @@ MATCHES = {
 # Standardise BASE_URL by removing any / from the end
 while BASE_URL.endswith("/"):
   BASE_URL=BASE_URL[0:-1]
+
+def formatted_date(d):
+  # datetime to RFC 2822
+  return formatdate(time.mktime(d.utctimetuple()))
 
 feed_template = """<?xml version="1.0" encoding="ISO-8859-1"?>
   <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
@@ -58,18 +64,17 @@ def main():
       # TODO more metadata.  See https://www.apple.com/uk/itunes/podcasts/specs.html#rss
       # Can we get Album, Title, Comment?
 
-      pubDate = formatdate(os.path.getctime(filename))  # Base pubDate on create date of file.  Imperfect.
+      pubDate = formatdate(os.path.getctime(os.path.join(dirname, filename)))  # Base pubDate on create date of file.  Imperfect.
       guid = hashlib.md5()
       guid.update(title)
       guid.update(pubDate)
 
-      from mutagen.mp4 import MP4
       if filename.endswith(".m4a"):
-        audio = MP4(filename)
+        audio = MP4(os.path.join(dirname, filename))
         album = audio['\xa9alb'][0].replace('&','&amp;')   # program name *used
         lyrics = audio['\xa9lyr'][0].replace('&','&amp;')  # detailed notes * used
         artist = audio['\xa9ART'][0].replace('&','&amp;')  # radio station * used
-        pubDate  = datetime.strptime(audio['\xa9day'][0][0:19], '%Y-%m-%dT%H:%M:%S')  # broadcast date, eg 2014-09-18T23:00:00+01:00 TODO parse timezone
+        pubDate  = formatted_date(dateparse(audio['\xa9day'][0]))  # broadcast date, eg 2014-09-18T23:00:00+01:00 TODO parse timezone
         comment = audio['\xa9cmt'][0].replace('&','&amp;') # comment
         track_title = audio['\xa9nam'][0].replace('&','&amp;') # episode name  * used
         title = album + ' - ' + track_title
