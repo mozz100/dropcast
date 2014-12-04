@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env /Users/mozz/Virtualenvs/dropcast/bin/python 
 # Usage: ./podcast.py <base_url> <title> <description>
 # e.g. ./podcast.py 'https://dl.dropbox.com/u/1234567' 'My podcast' 'Created with dropcast'
 
