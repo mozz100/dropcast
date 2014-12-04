@@ -24,6 +24,12 @@ def formatted_date(d):
   # datetime to RFC 2822
   return formatdate(time.mktime(d.utctimetuple()))
 
+def get_prop(audio, prop):
+  try:
+    return audio[prop][0].replace('&','&amp;')
+  except KeyError:
+    return ""
+
 feed_template = """<?xml version="1.0" encoding="ISO-8859-1"?>
   <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
     <channel>
@@ -71,12 +77,12 @@ def main():
 
       if filename.endswith(".m4a"):
         audio = MP4(os.path.join(dirname, filename))
-        album = audio['\xa9alb'][0].replace('&','&amp;')   # program name *used
-        lyrics = audio['\xa9lyr'][0].replace('&','&amp;')  # detailed notes * used
-        artist = audio['\xa9ART'][0].replace('&','&amp;')  # radio station * used
+        album =       get_prop(audio,'\xa9alb')   # program name *used
+        lyrics =      get_prop(audio,'\xa9lyr')   # detailed notes * used
+        artist =      get_prop(audio,'\xa9ART')   # radio station * used
+        comment =     get_prop(audio,'\xa9cmt')   # comment
+        track_title = get_prop(audio,'\xa9nam')   # episode name  * used
         pubDate  = formatted_date(dateparse(audio['\xa9day'][0]))  # broadcast date, eg 2014-09-18T23:00:00+01:00 TODO parse timezone
-        comment = audio['\xa9cmt'][0].replace('&','&amp;') # comment
-        track_title = audio['\xa9nam'][0].replace('&','&amp;') # episode name  * used
         title = album + ' - ' + track_title
         feed += """<item>
                   <title>%s</title>
